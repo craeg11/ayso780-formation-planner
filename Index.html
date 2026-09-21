@@ -1,0 +1,928 @@
+<!doctype html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    :root {
+      --green: #22663e;
+      --pale: #edf6ed;
+      --line: #c8d2ca;
+      --ink: #17251d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #fff;
+      color: var(--ink);
+      font: 20px Arial, sans-serif;
+      line-height: 1.4;
+    }
+    header {
+      padding: 22px 18px 18px;
+      background: var(--pale);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    h1 { font-size: 31px; margin: 0 0 7px; }
+    h2 { font-size: 27px; margin: 0 0 12px; }
+    h3 { font-size: 22px; margin: 0 0 9px; }
+    .sync-status {
+      font-size: 14px;
+      font-weight: bold;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: #e0e0e0;
+    }
+    .sync-status.online { background: #d4edda; color: #155724; }
+    .sync-status.offline { background: #fff3cd; color: #856404; }
+    main {
+      max-width: 900px;
+      margin: auto;
+      padding: 16px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px;
+      margin: 16px 0;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin: 14px 0 6px;
+    }
+    input, select, button {
+      font: inherit;
+      min-height: 54px;
+      border-radius: 9px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #91a595;
+      background: #fff;
+    }
+    button {
+      padding: 11px 16px;
+      border: 0;
+      background: var(--green);
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .secondary {
+      background: #e8efe9;
+      color: var(--ink);
+      border: 1px solid #aabaae;
+    }
+    .danger { background: #a33232; }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .hint {
+      font-size: 18px;
+      color: #486052;
+      margin: 5px 0 12px;
+    }
+    .notice {
+      padding: 14px;
+      border-radius: 9px;
+      margin: 14px 0;
+      background: #fff5d6;
+    }
+    .success { background: #e6f4e9; }
+    .hidden { display: none; }
+    .step-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #3f6650;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      margin-bottom: 6px;
+    }
+    .checks, .subs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .checks label { font-weight: normal; margin: 0; }
+    .quarter { border-top: 4px solid var(--green); }
+    #rosterRows > div {
+      display: grid;
+      grid-template-columns: 1fr 105px 54px;
+      gap: 9px;
+      margin: 10px 0;
+    }
+    .pitch {
+      position: relative;
+      width: 100%;
+      aspect-ratio: .68;
+      margin: 14px auto 22px;
+      overflow: hidden;
+      border: 4px solid #fff;
+      outline: 2px solid #d0e0d2;
+      border-radius: 10px;
+      background: repeating-linear-gradient(0deg, #4d9858 0 12.5%, #5aa664 12.5% 25%);
+    }
+    .pitch:before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        linear-gradient(90deg, transparent 49.87%, rgba(255,255,255,.9) 49.87% 50.13%, transparent 50.13%),
+        linear-gradient(0deg, transparent 49.87%, rgba(255,255,255,.9) 49.87% 50.13%, transparent 50.13%),
+        radial-gradient(circle at 50% 50%, transparent 0 13%, rgba(255,255,255,.9) 13.3% 13.8%, transparent 14.1%);
+      pointer-events: none;
+    }
+    .box {
+      position: absolute;
+      left: 17%;
+      width: 66%;
+      height: 16%;
+      border: 2px solid rgba(255,255,255,.9);
+      pointer-events: none;
+    }
+    .top { top: 0; border-top: 0; }
+    .bottom { bottom: 0; border-bottom: 0; }
+    .player {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      width: min(29%, 190px);
+      z-index: 1;
+    }
+    .player label {
+      margin: 0 0 3px;
+      padding: 2px 4px;
+      color: #fff;
+      background: rgba(23,91,45,.9);
+      border-radius: 7px;
+      text-shadow: 0 1px 2px #174722;
+      text-align: center;
+      font-size: 15px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      position: relative;
+      z-index: 1;
+    }
+    .player select {
+      min-height: 44px;
+      padding: 6px;
+      font-size: 16px;
+      box-shadow: 0 1px 4px #285b30;
+    }
+    .subs label { font-size: 18px; margin: 0 0 4px; }
+    .or {
+      text-align: center;
+      font-weight: bold;
+      color: #42654f;
+      margin: 22px 0 8px;
+    }
+    .unavailable {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      row-gap: 10px;
+    }
+
+    /* Mobile Overrides */
+    @media (max-width: 1100px) {
+      body { font-size: 36px; line-height: 1.4; }
+      h1 { font-size: 47px; }
+      h2 { font-size: 41px; }
+      h3 { font-size: 34px; }
+      main { padding: 14px; }
+      .card { padding: 18px; margin: 15px 0; }
+      .row { grid-template-columns: 1fr; }
+      input, select { font-size: 36px; min-height: 90px; }
+      #formation, #loadPlan { min-height: 96px; height: 96px; }
+      button { font-size: 36px; min-height: 130px; padding: 22px 20px; }
+      .hint { font-size: 28px; }
+      .step-title { font-size: 27px; }
+      .pitch {
+        width: calc(100% + 36px);
+        margin-left: -18px;
+        border-radius: 0;
+        outline: 0;
+      }
+      .player { width: 16%; }
+      .player label { font-size: 40px; }
+      .player select {
+        font-size: 24px;
+        min-height: 82px;
+        padding: 13px 8px;
+        width: 180px;
+        max-width: none;
+        margin-left: 50%;
+        transform: translateX(-50%);
+      }
+      .subs {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+      .subs label { font-size: 38px; }
+      .checks { font-size: 18px; grid-template-columns: 1fr; }
+      #rosterRows > div { grid-template-columns: 1fr 125px 70px; }
+      .team-actions, .plan-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .team-actions button, .plan-actions button {
+        font-size: 30px;
+        min-width: 0;
+        padding: 16px 8px;
+      }
+      .glossary { font-size: 25px; }
+      .glossary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .glossary-grid span:nth-last-child(2) { grid-column: 1; }
+      .glossary-grid span:last-child { grid-column: 2; }
+      .glossary h3 { font-size: 34px; }
+      .unavailable {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: 10px;
+        column-gap: 20px;
+      }
+      .unavailable label { font-size: 29px; }
+      .unavailable select { font-size: 32px; min-height: 88px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>AYSO Lineup Planner</h1>
+      <div>Make a team lineup, one quarter at a time.</div>
+    </div>
+    <div id="syncBadge" class="sync-status offline">Offline</div>
+  </header>
+
+  <main>
+    <div id="notice" class="notice hidden"></div>
+
+    <!-- STEP 1: Select or Create Team -->
+    <section id="teamStep" class="card">
+      <div class="step-title">Step 1</div>
+      <h2>Open or create a team</h2>
+      <label for="teamSelect">Select an existing team</label>
+      <select id="teamSelect"></select>
+      <div class="actions">
+        <button id="openTeamButton" class="secondary" onclick="openSelectedTeam()">Open team</button>
+      </div>
+      <div class="or">OR</div>
+      <div id="createTeam">
+        <label for="teamName">Create a new team</label>
+        <input id="teamName" maxlength="80" placeholder="Example: U12 Blue">
+        <label for="teamCoach">Coach name (optional)</label>
+        <input id="teamCoach" maxlength="80" placeholder="Coach name">
+      </div>
+      <div class="actions">
+        <button id="createButton" onclick="saveTeam()">Create team</button>
+        <button id="updateButton" class="secondary hidden" onclick="saveTeam()">Update team details</button>
+      </div>
+    </section>
+
+    <!-- STEP 2: Roster Setup -->
+    <section id="rosterStep" class="card hidden">
+      <div class="step-title">Step 2</div>
+      <h2 id="rosterHeading">Build the roster</h2>
+      <p class="hint">Add the players for this team. Only display name and jersey number are stored.</p>
+      <div id="rosterRows"></div>
+      <div class="actions">
+        <button class="secondary" onclick="addRosterRow()">Add player</button>
+        <button onclick="saveRoster(false)">Save roster</button>
+        <button onclick="saveRoster(true)">Continue to planner</button>
+        <button class="secondary" onclick="backToTeams()">Change team</button>
+        <button class="danger" onclick="confirmDeleteTeam()">Delete this team</button>
+      </div>
+    </section>
+
+    <!-- STEP 3: Game Planner -->
+    <section id="plannerStep" class="hidden">
+      <section class="card team-tools">
+        <h3>Team management</h3>
+        <div class="actions team-actions">
+          <button class="secondary" onclick="editRoster()">Edit roster</button>
+          <button class="secondary" onclick="backToTeams()">Change team</button>
+          <button class="danger" onclick="confirmDeleteTeam()">Delete team</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="step-title">Step 3</div>
+        <h2 id="plannerHeading">Plan the game</h2>
+        <div class="row">
+          <label for="planName">Plan name
+            <input id="planName" maxlength="80" placeholder="Saturday vs. Tigers">
+          </label>
+          <label for="formation">Formation
+            <select id="formation"></select>
+          </label>
+          <label for="loadPlan">Saved plans
+            <select id="loadPlan"></select>
+          </label>
+        </div>
+        <div class="actions plan-actions">
+          <button class="secondary" onclick="newPlan()">New plan</button>
+          <button onclick="savePlan()">Save plan</button>
+          <button class="danger" onclick="confirmDeletePlan()">Delete plan</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Unavailable players</h2>
+        <p class="hint">Choose up to six players who are unavailable for this plan.</p>
+        <div id="absences" class="unavailable"></div>
+      </section>
+
+      <div id="quarters"></div>
+
+      <section class="card glossary">
+        <h3>Position glossary</h3>
+        <div class="glossary-grid">
+          <span><b>GK</b> Goalkeeper</span>
+          <span><b>LB / RB</b> Left / Right Back</span>
+          <span><b>LCB / RCB</b> Left / Right Center Back</span>
+          <span><b>CB</b> Center Back</span>
+          <span><b>LWB / RWB</b> Left / Right Wing Back</span>
+          <span><b>LM / RM</b> Left / Right Mid</span>
+          <span><b>LCM / RCM</b> Left / Right Center Mid</span>
+          <span><b>CM</b> Center Mid</span>
+          <span><b>DM</b> Defensive Mid</span>
+          <span><b>AM</b> Attacking Mid</span>
+          <span><b>LW / RW</b> Left / Right Wing</span>
+          <span><b>LS</b> Left Striker</span>
+          <span><b>RS</b> Right Striker</span>
+          <span><b>ST</b> Striker</span>
+          <span><b>LDM / RDM</b> Left / Right Defensive Mid</span>
+          <span><b>LAM / CAM / RAM</b> Attacking Mid positions</span>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    // OPTIONAL: Insert your deployed Web App URL to enable cloud background syncing
+    const SYNC_SERVER_URL = ""; 
+
+    // Local Storage Database Engine
+    const DB = {
+      get: () => JSON.parse(localStorage.getItem('ayso_planner_db') || '{"teams":[],"rosters":{},"plans":{}}'),
+      set: (data) => localStorage.setItem('ayso_planner_db', JSON.stringify(data)),
+      getQueue: () => JSON.parse(localStorage.getItem('ayso_sync_queue') || '[]'),
+      setQueue: (q) => localStorage.setItem('ayso_sync_queue', JSON.stringify(q)),
+
+      // Reads
+      getAppData: () => {
+        const db = DB.get();
+        return { teams: db.teams };
+      },
+      getTeamData: (teamId) => {
+        const db = DB.get();
+        return {
+          roster: db.rosters[teamId] || [],
+          plans: db.plans[teamId] || []
+        };
+      },
+
+      // Writes
+      saveTeam: (team) => {
+        const db = DB.get();
+        const id = team.id || crypto.randomUUID();
+        const newTeam = { id, name: team.name, coach: team.coach || '' };
+        const i = db.teams.findIndex(t => t.id === id);
+        if (i >= 0) db.teams[i] = newTeam;
+        else db.teams.push(newTeam);
+        DB.set(db);
+        DB.queueSync('saveTeam', { team: newTeam });
+        return newTeam;
+      },
+      deleteTeam: (teamId) => {
+        const db = DB.get();
+        const team = db.teams.find(t => t.id === teamId);
+        db.teams = db.teams.filter(t => t.id !== teamId);
+        delete db.rosters[teamId];
+        delete db.plans[teamId];
+        DB.set(db);
+        DB.queueSync('deleteTeam', { teamId });
+        return { deleted: team ? team.name : 'Team' };
+      },
+      saveRoster: (teamId, playerRows) => {
+        const db = DB.get();
+        const cleaned = playerRows
+          .filter(r => r.name.trim())
+          .map(r => ({
+            name: r.name.trim(),
+            jersey: r.jersey.trim(),
+            label: r.jersey.trim() ? `${r.name.trim()} ${r.jersey.trim()}` : r.name.trim()
+          }));
+        db.rosters[teamId] = cleaned;
+        DB.set(db);
+        DB.queueSync('saveRoster', { teamId, roster: cleaned });
+        return cleaned;
+      },
+      savePlan: (plan) => {
+        const db = DB.get();
+        const teamId = plan.teamId;
+        const id = plan.id || crypto.randomUUID();
+        const newPlan = { ...plan, id, savedAt: new Date().toISOString() };
+        if (!db.plans[teamId]) db.plans[teamId] = [];
+        const i = db.plans[teamId].findIndex(p => p.id === id);
+        if (i >= 0) db.plans[teamId][i] = newPlan;
+        else db.plans[teamId].unshift(newPlan);
+        DB.set(db);
+        DB.queueSync('savePlan', { plan: newPlan });
+        return newPlan;
+      },
+      deletePlan: (teamId, planId) => {
+        const db = DB.get();
+        if (db.plans[teamId]) {
+          const plan = db.plans[teamId].find(p => p.id === planId);
+          db.plans[teamId] = db.plans[teamId].filter(p => p.id !== planId);
+          DB.set(db);
+          DB.queueSync('deletePlan', { planId });
+          return { deleted: plan ? plan.name : 'Plan' };
+        }
+        return { deleted: 'Plan' };
+      },
+
+      // Sync Engine Queue
+      queueSync: (action, payload) => {
+        if (!SYNC_SERVER_URL) return;
+        const queue = DB.getQueue();
+        queue.push({ action, payload, timestamp: Date.now() });
+        DB.setQueue(queue);
+        DB.processSyncQueue();
+      },
+      processSyncQueue: async () => {
+        if (!navigator.onLine || !SYNC_SERVER_URL) return;
+        const queue = DB.getQueue();
+        if (queue.length === 0) return;
+
+        const item = queue[0];
+        try {
+          const res = await fetch(SYNC_SERVER_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: item.action, ...item.payload })
+          });
+          if (res.ok) {
+            queue.shift();
+            DB.setQueue(queue);
+            DB.processSyncQueue();
+          }
+        } catch (e) {
+          console.warn("Sync temporarily paused:", e);
+        }
+      }
+    };
+
+    // Connection Status Monitor
+    const syncBadge = $('syncBadge');
+    function updateOnlineStatus() {
+      if (navigator.onLine) {
+        syncBadge.textContent = "Online";
+        syncBadge.className = "sync-status online";
+        DB.processSyncQueue();
+      } else {
+        syncBadge.textContent = "Offline";
+        syncBadge.className = "sync-status offline";
+      }
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    // Register Service Worker for Offline PWA Support
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+
+    // UI Helpers
+    function $(id) { return document.getElementById(id); }
+    const notice = $('notice');
+    const teamStep = $('teamStep');
+    const teamSelect = $('teamSelect');
+    const openTeamButton = $('openTeamButton');
+    const teamName = $('teamName');
+    const teamCoach = $('teamCoach');
+    const createTeam = $('createTeam');
+    const createButton = $('createButton');
+    const updateButton = $('updateButton');
+    const rosterStep = $('rosterStep');
+    const rosterHeading = $('rosterHeading');
+    const rosterRows = $('rosterRows');
+    const plannerStep = $('plannerStep');
+    const plannerHeading = $('plannerHeading');
+    const planName = $('planName');
+    const formation = $('formation');
+    const loadPlan = $('loadPlan');
+    const absences = $('absences');
+    const quarters = $('quarters');
+
+    // Formations
+    const F = {
+      '4-4-2': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Right Center Back', 'Right Back', 'Left Mid', 'Left Center Mid', 'Right Center Mid', 'Right Mid', 'Left Striker', 'Right Striker'],
+      '3-4-3': ['Goalkeeper', 'Left Center Back', 'Center Back', 'Right Center Back', 'Left Mid', 'Left Center Mid', 'Right Center Mid', 'Right Mid', 'Left Wing', 'Striker', 'Right Wing'],
+      '4-3-3': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Right Center Back', 'Right Back', 'Left Mid', 'Center Mid', 'Right Mid', 'Left Wing', 'Striker', 'Right Wing'],
+      '4-5-1': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Right Center Back', 'Right Back', 'Left Mid', 'Left Center Mid', 'Center Mid', 'Right Center Mid', 'Right Mid', 'Striker'],
+      '4-2-3-1': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Right Center Back', 'Right Back', 'Left Defensive Mid', 'Right Defensive Mid', 'Left Attacking Mid', 'Center Attacking Mid', 'Right Attacking Mid', 'Striker'],
+      '3-5-2': ['Goalkeeper', 'Left Center Back', 'Center Back', 'Right Center Back', 'Left Wing Back', 'Left Center Mid', 'Center Mid', 'Right Center Mid', 'Right Wing Back', 'Left Striker', 'Right Striker'],
+      '4-4-1-1': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Right Center Back', 'Right Back', 'Left Mid', 'Left Center Mid', 'Right Center Mid', 'Right Mid', 'Attacking Mid', 'Striker'],
+      '5-3-2': ['Goalkeeper', 'Left Wing Back', 'Left Center Back', 'Center Back', 'Right Center Back', 'Right Wing Back', 'Left Mid', 'Center Mid', 'Right Mid', 'Left Striker', 'Right Striker'],
+      '4-4-2 Diamond': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Right Center Back', 'Right Back', 'Defensive Mid', 'Left Mid', 'Right Mid', 'Attacking Mid', 'Left Striker', 'Right Striker']
+    };
+
+    const C = {
+      '4-4-2': [[50,91], [16,72], [36,77], [64,77], [84,72], [16,48], [38,53], [62,53], [84,48], [38,20], [62,20]],
+      '3-4-3': [[50,91], [25,76], [50,78], [75,76], [16,49], [38,53], [62,53], [84,49], [20,20], [50,17], [80,20]],
+      '4-3-3': [[50,91], [16,72], [36,77], [64,77], [84,72], [25,50], [50,53], [75,50], [20,20], [50,17], [80,20]],
+      '4-5-1': [[50,91], [16,72], [36,77], [64,77], [84,72], [13,44], [31,56], [50,36], [69,56], [87,44], [50,17]],
+      '4-2-3-1': [[50,91], [16,72], [36,77], [64,77], [84,72], [36,58], [64,58], [20,38], [50,35], [80,38], [50,17]],
+      '3-5-2': [[50,91], [25,76], [50,68], [75,76], [12,44], [32,56], [50,36], [68,56], [88,44], [38,19], [62,19]],
+      '4-4-1-1': [[50,91], [16,72], [36,77], [64,77], [84,72], [16,49], [38,53], [62,53], [84,49], [50,33], [50,17]],
+      '5-3-2': [[50,94], [10,61], [28,74], [50,68], [72,74], [90,61], [25,44], [50,46], [75,44], [38,19], [62,19]],
+      '4-4-2 Diamond': [[50,91], [16,72], [36,77], [64,77], [84,72], [50,59], [28,46], [72,46], [50,34], [38,18], [62,18]]
+    };
+
+    const P = {
+      'Goalkeeper':'GK', 'Left Back':'LB', 'Left Center Back':'LCB', 'Center Back':'CB', 'Right Center Back':'RCB', 'Right Back':'RB',
+      'Left Mid':'LM', 'Left Center Mid':'LCM', 'Center Mid':'CM', 'Right Center Mid':'RCM', 'Right Mid':'RM', 'Left Striker':'LS',
+      'Right Striker':'RS', 'Left Wing':'LW', 'Right Wing':'RW', 'Striker':'ST', 'Left Defensive Mid':'LDM', 'Right Defensive Mid':'RDM',
+      'Left Attacking Mid':'LAM', 'Center Attacking Mid':'CAM', 'Right Attacking Mid':'RAM', 'Left Wing Back':'LWB', 'Right Wing Back':'RWB',
+      'Defensive Mid':'DM', 'Attacking Mid':'AM'
+    };
+
+    const WIDE_POSITIONS = new Set(['Left Back', 'Right Back', 'Left Mid', 'Right Mid', 'Left Wing', 'Right Wing', 'Left Wing Back', 'Right Wing Back']);
+
+    // Application State
+    let app = { teams: [], roster: [], plans: [] };
+    let teamId = '';
+    let plan = blank();
+    let rosterDraft = [];
+    let openedPlan = null;
+
+    function blank() {
+      return {
+        id: '',
+        teamId,
+        name: '',
+        date: '',
+        formation: '4-4-2',
+        absent: [],
+        quarters: {
+          Q1: { lineup: [], substitutes: [] },
+          Q2: { lineup: [], substitutes: [] },
+          Q3: { lineup: [], substitutes: [] },
+          Q4: { lineup: [], substitutes: [] }
+        }
+      };
+    }
+
+    function esc(x) {
+      return String(x).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+    }
+
+    function msg(x, kind = '', hide = true) {
+      notice.textContent = x;
+      notice.className = 'notice ' + kind;
+      if (hide) {
+        setTimeout(() => notice.classList.add('hidden'), 4000);
+      }
+    }
+
+    function init() {
+      updateOnlineStatus();
+      Object.keys(F).forEach(x => formation.add(new Option(x, x)));
+      formation.onchange = renderPlanner;
+      loadPlan.onchange = load;
+      teamSelect.onchange = () => openTeamButton.disabled = !teamSelect.value;
+      
+      app = { ...app, ...DB.getAppData() };
+      renderTeams();
+    }
+
+    function renderTeams() {
+      teamSelect.innerHTML = '<option value="">— Select a team —</option>' + 
+        app.teams.map(t => '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>').join('');
+      showLanding();
+    }
+
+    function showLanding() {
+      teamStep.classList.remove('hidden');
+      rosterStep.classList.add('hidden');
+      plannerStep.classList.add('hidden');
+      teamSelect.value = teamId || '';
+      openTeamButton.disabled = !teamSelect.value;
+      teamName.value = '';
+      teamCoach.value = '';
+      createTeam.classList.remove('hidden');
+      createButton.classList.remove('hidden');
+      updateButton.classList.add('hidden');
+    }
+
+    function openSelectedTeam() {
+      let id = teamSelect.value;
+      if (!id) {
+        msg('Select a team to open.', '', false);
+        return;
+      }
+      choose(id);
+    }
+
+    function choose(id) {
+      teamId = id;
+      const data = DB.getTeamData(id);
+      app = { ...app, ...data };
+      if (app.roster.length) startPlanner();
+      else startRoster();
+    }
+
+    function saveTeam() {
+      let existing = app.teams.find(t => t.id === teamId);
+      if (!teamName.value.trim()) {
+        msg('Enter a team name.', '', false);
+        return;
+      }
+      const t = DB.saveTeam({ id: existing?.id || '', name: teamName.value.trim(), coach: teamCoach.value.trim() });
+      let i = app.teams.findIndex(x => x.id === t.id);
+      if (i < 0) app.teams.push(t);
+      else app.teams[i] = t;
+      
+      teamId = t.id;
+      teamSelect.innerHTML = '<option value="">— Select a team —</option>' + 
+        app.teams.map(x => '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>').join('');
+      teamSelect.value = t.id;
+      openTeamButton.disabled = false;
+      app.roster = [];
+      app.plans = [];
+      plan = blank();
+      startRoster();
+      msg('Team saved. Now add the roster.', 'success');
+    }
+
+    function startRoster() {
+      teamStep.classList.add('hidden');
+      plannerStep.classList.add('hidden');
+      rosterStep.classList.remove('hidden');
+      let t = app.teams.find(x => x.id === teamId);
+      rosterHeading.textContent = 'Build the roster for ' + (t?.name || 'this team');
+      rosterDraft = app.roster.length 
+        ? app.roster.map(p => ({ name: p.name, jersey: p.jersey }))
+        : Array.from({ length: 15 }, (_, i) => ({ name: '', jersey: String(i + 2) }));
+      renderRoster();
+    }
+
+    function backToTeams() {
+      teamId = '';
+      plan = blank();
+      showLanding();
+    }
+
+    function editRoster() {
+      startRoster();
+    }
+
+    function confirmDeleteTeam() {
+      let t = app.teams.find(x => x.id === teamId);
+      if (!t) return;
+      if (!confirm('Delete ' + t.name + ', its roster, and all saved plans? This cannot be undone.')) return;
+      
+      const res = DB.deleteTeam(teamId);
+      app.teams = app.teams.filter(t => t.id !== teamId);
+      app.roster = [];
+      app.plans = [];
+      teamId = '';
+      plan = blank();
+      renderTeams();
+      msg(res.deleted + ' was deleted.', 'success');
+    }
+
+    function readRosterDraft() {
+      return [...rosterRows.children].map(r => ({
+        name: r.children[0].value,
+        jersey: r.children[1].value
+      }));
+    }
+
+    function renderRoster() {
+      rosterRows.innerHTML = rosterDraft.map((p, i) => 
+        '<div>' +
+          '<input value="' + esc(p.name) + '" aria-label="Player name" placeholder="Player name">' +
+          '<input value="' + esc(p.jersey) + '" aria-label="Jersey number" placeholder="#"> ' +
+          '<button class="danger" aria-label="Remove player" onclick="removePlayer(' + i + ')">×</button>' +
+        '</div>'
+      ).join('');
+    }
+
+    function addRosterRow() {
+      rosterDraft = readRosterDraft();
+      rosterDraft.push({ name: '', jersey: '' });
+      renderRoster();
+    }
+
+    function removePlayer(i) {
+      rosterDraft = readRosterDraft();
+      rosterDraft.splice(i, 1);
+      renderRoster();
+    }
+
+    function saveRoster(continueToPlanner) {
+      let rows = readRosterDraft();
+      if (!rows.some(r => r.name.trim())) {
+        msg('Add at least one player before continuing.', '', false);
+        return;
+      }
+      const roster = DB.saveRoster(teamId, rows);
+      app.roster = roster;
+      rosterDraft = roster.map(p => ({ name: p.name, jersey: p.jersey }));
+      plan = blank();
+      msg('Roster saved.', 'success');
+      startPlanner();
+    }
+
+    function startPlanner() {
+      teamStep.classList.add('hidden');
+      rosterStep.classList.add('hidden');
+      plannerStep.classList.remove('hidden');
+      let t = app.teams.find(x => x.id === teamId);
+      plannerHeading.textContent = 'Plan the game for ' + (t?.name || 'this team');
+      plan = plan.teamId === teamId ? plan : blank();
+      renderPlanner();
+    }
+
+    function labels() {
+      return app.roster.map(x => x.label);
+    }
+
+    function options(current, used) {
+      let no = new Set([...plan.absent, ...used]);
+      return '<option value="">— Select —</option>' + 
+        labels().filter(x => x === current || !no.has(x))
+          .map(x => '<option ' + (x === current ? 'selected' : '') + ' value="' + esc(x) + '">' + esc(x) + '</option>')
+          .join('');
+    }
+
+    function renderPlanner() {
+      plan.teamId = teamId;
+      plan.formation = formation.value || plan.formation;
+      formation.value = plan.formation;
+      planName.value = plan.name;
+      renderSaved();
+      renderAbsent();
+      renderFields();
+    }
+
+    function renderSaved() {
+      loadPlan.innerHTML = '<option value="">— Select saved plan —</option>' + 
+        app.plans.map((p, i) => '<option value="' + i + '">' + esc(p.name || 'Lineup plan') + '</option>').join('');
+      let i = app.plans.findIndex(x => x.id === plan.id);
+      loadPlan.value = i >= 0 ? i : '';
+    }
+
+    function renderAbsent() {
+      absences.innerHTML = Array.from({ length: 6 }, (_, i) => {
+        let current = plan.absent[i] || '';
+        let used = plan.absent.filter((_, j) => j !== i);
+        return '<label>Unavailable Player ' + (i + 1) + 
+          '<select onchange="setAbsent(' + i + ', this.value)">' + options(current, used) + '</select></label>';
+      }).join('');
+    }
+
+    function renderFields() {
+      let pos = F[plan.formation];
+      let co = C[plan.formation];
+
+      quarters.innerHTML = ['Q1', 'Q2', 'Q3', 'Q4'].map(q => {
+        let s = plan.quarters[q];
+        let players = pos.map((p, i) => {
+          let v = s.lineup[i] || '';
+          let u = [...s.lineup.filter((_, j) => j !== i), ...s.substitutes];
+          let [x, y] = co[i];
+          if (WIDE_POSITIONS.has(p)) {
+            x = p.startsWith('Left') ? 12 : 88;
+          }
+          return '<div class="player" style="left:' + x + '%;top:' + y + '%">' +
+            '<label>' + esc(P[p] || p) + '</label>' +
+            '<select aria-label="' + esc(q + ' ' + p) + '" onchange="setLineup(\'' + q + '\',' + i + ',this.value)">' + 
+            options(v, u) + '</select></div>';
+        }).join('');
+
+        let subs = Array.from({ length: 6 }, (_, i) => {
+          let v = s.substitutes[i] || '';
+          let u = [...s.lineup, ...s.substitutes.filter((_, j) => j !== i)];
+          return '<div><label>Sub ' + (i + 1) + '</label>' +
+            '<select onchange="setSub(\'' + q + '\',' + i + ',this.value)">' + options(v, u) + '</select></div>';
+        }).join('');
+
+        return '<section class="card quarter"><h2>' + q + '</h2>' +
+          '<p class="hint">Choose players directly on their field positions.</p>' +
+          '<div class="pitch"><div class="box top"></div><div class="box bottom"></div>' + players + '</div>' +
+          '<h3>Substitutes used</h3>' +
+          '<p class="hint">These players are unavailable elsewhere in this quarter.</p>' +
+          '<div class="subs">' + subs + '</div></section>';
+      }).join('');
+    }
+
+    function setAbsent(i, value) {
+      plan.absent[i] = value;
+      plan.absent = plan.absent.filter(Boolean);
+      let unavailable = new Set(plan.absent);
+      
+      Object.values(plan.quarters).forEach(s => {
+        s.lineup = s.lineup.map(p => unavailable.has(p) ? '' : p);
+        s.substitutes = s.substitutes.map(p => unavailable.has(p) ? '' : p);
+      });
+      renderPlanner();
+    }
+
+    function setLineup(q, i, v) {
+      plan.quarters[q].lineup[i] = v;
+      renderFields();
+    }
+
+    function setSub(q, i, v) {
+      plan.quarters[q].substitutes[i] = v;
+      renderFields();
+    }
+
+    function newPlan() {
+      plan = blank();
+      openedPlan = null;
+      renderPlanner();
+    }
+
+    function load() {
+      if (loadPlan.value === '') {
+        newPlan();
+        return;
+      }
+      let p = app.plans[Number(loadPlan.value)];
+      if (p) {
+        plan = JSON.parse(JSON.stringify(p));
+        plan.teamId = teamId;
+        Object.values(plan.quarters).forEach(s => s.substitutes = (s.substitutes || []).slice(0, 6));
+        openedPlan = { id: plan.id, name: plan.name };
+        renderPlanner();
+      }
+    }
+
+    function savePlan() {
+      plan.teamId = teamId;
+      plan.name = planName.value;
+      plan.date = '';
+      plan.formation = formation.value;
+      
+      let copy = openedPlan && plan.id === openedPlan.id && plan.name !== openedPlan.name;
+      let x = JSON.parse(JSON.stringify(plan));
+      if (copy) x.id = '';
+
+      const saved = DB.savePlan(x);
+      plan = saved;
+      openedPlan = { id: saved.id, name: saved.name };
+      
+      const data = DB.getTeamData(teamId);
+      app = { ...app, ...data };
+      renderPlanner();
+      msg(copy ? 'New plan created.' : 'Plan saved.', 'success');
+    }
+
+    function confirmDeletePlan() {
+      if (!plan.id) {
+        msg('Select a saved plan to delete.', '', false);
+        return;
+      }
+      if (!confirm('Delete "' + (plan.name || 'this plan') + '"? This cannot be undone.')) return;
+
+      const res = DB.deletePlan(teamId, plan.id);
+      plan = blank();
+      openedPlan = null;
+      const data = DB.getTeamData(teamId);
+      app = { ...app, ...data };
+      renderPlanner();
+      msg(res.deleted + ' was deleted.', 'success');
+    }
+
+    // Run Initializing Function
+    init();
+  </script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
+  </script>
+</body>
+</html>
