@@ -4,7 +4,7 @@ const SHEETS = {
   plans: 'Lineup Plans'
 };
 
-const TEAM_HEADERS = ['Team ID', 'Team name', 'Coach'];
+const TEAM_HEADERS = ['Team ID', 'Team name', 'Coach', 'PIN'];
 const ROSTER_HEADERS = ['Team ID', 'Display name', 'Jersey #'];
 const PLAN_HEADERS = ['Plan ID', 'Saved at', 'Team ID', 'Plan name', 'Date', 'Formation', 'Plan data'];
 
@@ -16,34 +16,44 @@ function onOpen() {
     .addToUi();
 }
 
+function showPlannerSidebar() {
+  setupPlanner();
+  SpreadsheetApp.getUi().showSidebar(
+    HtmlService.createHtmlOutputFromFile('index').setTitle('AYSO Lineup Planner')
+  );
+}
+
 function doGet(e) {
-  const action = e.parameter.action;
+  const action = e ? e.parameter.action : '';
   let result = {};
   
-  if (action === 'getAppData') result = getAppData(); //[cite: 2]
-  if (action === 'getTeamData') result = getTeamData(e.parameter.teamId); //[cite: 2]
+  if (action === 'getAppData') result = getAppData();
+  if (action === 'getTeamData') result = getTeamData(e.parameter.teamId, e.parameter.pin);
   
   return ContentService.createTextOutput(JSON.stringify(result))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
-  const payload = JSON.parse(e.postData.contents);
-  let result = {};
-  
-  if (payload.action === 'savePlan') result = savePlan(payload.plan); //[cite: 2]
-  if (payload.action === 'saveRoster') result = saveRoster(payload.teamId, payload.roster); //[cite: 2]
-  if (payload.action === 'saveTeam') result = saveTeam(payload.team); //[cite: 2]
-  
-  return ContentService.createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+  try {
+    const params = JSON.parse(e.postData.contents || '{}');
+    const action = params.action;
+    let result = {};
 
-function showPlannerSidebar() {
-  setupPlanner();
-  SpreadsheetApp.getUi().showSidebar(
-    HtmlService.createHtmlOutputFromFile('Index').setTitle('AYSO Lineup Planner')
-  );
+    if (action === 'getAppData') result = getAppData();
+    else if (action === 'getTeamData') result = getTeamData(params.teamId, params.pin);
+    else if (action === 'saveTeam') result = saveTeam(params.team);
+    else if (action === 'deleteTeam') result = deleteTeam(params.teamId, params.pin);
+    else if (action === 'saveRoster') result = saveRoster(params.teamId, params.pin, params.roster);
+    else if (action === 'savePlan') result = savePlan(params.pin, params.plan);
+    else if (action === 'deletePlan') result = deletePlan(params.teamId, params.planId, params.pin);
+
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }
 
 function setupPlanner() {
@@ -60,9 +70,9 @@ function getAppData() {
   };
 }
 
-function getTeamData(teamId) {
+function getTeamData(teamId, pin) {
   setupPlanner();
-  requireTeam_(teamId);
+  verifyTeamPin_(teamId, pin);
   return {
     roster: readRoster_(getSheet_(SHEETS.roster), teamId),
     plans: readPlans_(getSheet_(SHEETS.plans), teamId)
@@ -73,16 +83,21 @@ function saveTeam(team) {
   setupPlanner();
   const name = String((team || {}).name || '').trim().slice(0, 80);
   const coach = String((team || {}).coach || '').trim().slice(0, 80);
+  const pin = String((team || {}).pin || '').trim();
   
-  if (!name) {
-    throw new Error('Enter a team name.');
-  }
-  
+  if (!name) throw new Error('Enter a team name.');
+  if (!/^\d{4}$/.test(pin)) throw new Error('PIN must be a 4-digit number.');
+
   const sheet = getSheet_(SHEETS.teams);
   const id = String((team || {}).id || '').trim() || Utilities.getUuid();
-  const row = [id, name, coach];
   const data = sheet.getDataRange().getValues();
   const i = data.findIndex((r, n) => n > 0 && r[0] === id);
+  
+  if (i > 0) {
+    verifyTeamPin_(id, team.currentPin || pin);
+  }
+
+  const row = [id, name, coach, pin];
   
   if (i > 0) {
     sheet.getRange(i + 1, 1, 1, TEAM_HEADERS.length).setValues([row]);
@@ -93,26 +108,27 @@ function saveTeam(team) {
   return { id, name, coach };
 }
 
-function deleteTeam(teamId) {
+function deleteTeam(teamId, pin) {
   setupPlanner();
-  const team = requireTeam_(teamId);
-  rewriteWithoutTeam_(getSheet_(SHEETS.teams), TEAM_HEADERS.length, 0, teamId);
-  rewriteWithoutTeam_(getSheet_(SHEETS.roster), ROSTER_HEADERS.length, 0, teamId);
-  rewriteWithoutTeam_(getSheet_(SHEETS.plans), PLAN_HEADERS.length, 2, teamId);
+  const id = String(teamId || '').trim();
+  const team = verifyTeamPin_(id, pin);
+
+  rewriteWithoutTeam_(getSheet_(SHEETS.teams), TEAM_HEADERS.length, 0, id);
+  rewriteWithoutTeam_(getSheet_(SHEETS.roster), ROSTER_HEADERS.length, 0, id);
+  rewriteWithoutTeam_(getSheet_(SHEETS.plans), PLAN_HEADERS.length, 2, id);
+
   return { deleted: team.name };
 }
 
-function saveRoster(teamId, roster) {
+function saveRoster(teamId, pin, roster) {
   setupPlanner();
-  requireTeam_(teamId);
+  verifyTeamPin_(teamId, pin);
   
   const players = (roster || []).map(cleanPlayer_).filter(p => p.name);
   const labels = new Set();
   
   players.forEach(p => {
-    if (labels.has(p.label)) {
-      throw new Error(`Duplicate player: ${p.label}`);
-    }
+    if (labels.has(p.label)) throw new Error(`Duplicate player: ${p.label}`);
     labels.add(p.label);
   });
   
@@ -129,10 +145,10 @@ function saveRoster(teamId, roster) {
   return readRoster_(sheet, teamId);
 }
 
-function savePlan(plan) {
+function savePlan(pin, plan) {
   setupPlanner();
   const safe = validatePlan_(plan || {});
-  requireTeam_(safe.teamId);
+  verifyTeamPin_(safe.teamId, pin);
   
   const sheet = getSheet_(SHEETS.plans);
   const id = safe.id || Utilities.getUuid();
@@ -158,24 +174,38 @@ function savePlan(plan) {
   return { ...safe, id };
 }
 
-function deletePlan(planId) {
+function deletePlan(teamId, planId, pin) {
   setupPlanner();
-  const id = String(planId || '').trim();
+  verifyTeamPin_(teamId, pin);
   
-  if (!id) {
-    throw new Error('Choose a saved plan to delete.');
-  }
+  const id = String(planId || '').trim();
+  if (!id) throw new Error('Choose a saved plan to delete.');
   
   const sheet = getSheet_(SHEETS.plans);
-  const row = sheet.getDataRange().getValues().slice(1).find(record => record[0] === id);
+  const row = sheet.getDataRange().getValues().slice(1).find(record => record[0] === id && record[2] === teamId);
   
-  if (!row) {
-    throw new Error('That saved plan no longer exists.');
-  }
+  if (!row) throw new Error('That saved plan no longer exists.');
   
   const plan = JSON.parse(row[6]);
   rewriteWithoutPlan_(sheet, id);
   return { deleted: plan.name || 'Saved plan' };
+}
+
+function verifyTeamPin_(teamId, pin) {
+  const id = String(teamId || '').trim();
+  const providedPin = String(pin || '').trim();
+  
+  const sheet = getSheet_(SHEETS.teams);
+  const row = sheet.getDataRange().getValues().slice(1).find(r => r[0] === id);
+  
+  if (!row) throw new Error('Team not found.');
+  
+  const storedPin = String(row[3] || '').trim();
+  if (storedPin && storedPin !== providedPin) {
+    throw new Error('Incorrect team PIN.');
+  }
+  
+  return { id: row[0], name: row[1], coach: row[2] };
 }
 
 function spreadsheet_() {
@@ -184,13 +214,11 @@ function spreadsheet_() {
   const ss = storedId ? SpreadsheetApp.openById(storedId) : SpreadsheetApp.getActiveSpreadsheet();
   
   if (!ss) {
-    throw new Error('Open this project from its Google Sheet and run setupPlanner once before deploying the web app.');
+    throw new Error('Open this project from its Google Sheet and run setupPlanner once before deploying as a web app.');
   }
-  
   if (!storedId) {
     props.setProperty('PLANNER_SPREADSHEET_ID', ss.getId());
   }
-  
   return ss;
 }
 
@@ -201,7 +229,6 @@ function getSheet_(name) {
 function rewriteWithoutTeam_(sheet, columnCount, teamIdColumn, teamId) {
   const retained = sheet.getDataRange().getValues().slice(1).filter(row => row[teamIdColumn] !== teamId);
   sheet.getRange(2, 1, Math.max(sheet.getMaxRows() - 1, 1), columnCount).clearContent();
-  
   if (retained.length) {
     sheet.getRange(2, 1, retained.length, columnCount).setValues(retained);
   }
@@ -210,21 +237,9 @@ function rewriteWithoutTeam_(sheet, columnCount, teamIdColumn, teamId) {
 function rewriteWithoutPlan_(sheet, planId) {
   const retained = sheet.getDataRange().getValues().slice(1).filter(row => row[0] !== planId);
   sheet.getRange(2, 1, Math.max(sheet.getMaxRows() - 1, 1), PLAN_HEADERS.length).clearContent();
-  
   if (retained.length) {
     sheet.getRange(2, 1, retained.length, PLAN_HEADERS.length).setValues(retained);
   }
-}
-
-function requireTeam_(teamId) {
-  const id = String(teamId || '').trim();
-  const team = readTeams_(getSheet_(SHEETS.teams)).find(t => t.id === id);
-  
-  if (!team) {
-    throw new Error('Choose a team first.');
-  }
-  
-  return team;
 }
 
 function ensureSheet_(ss, name, headers) {
@@ -236,7 +251,6 @@ function ensureSheet_(ss, name, headers) {
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#d9ead3');
     sheet.setFrozenRows(1);
   }
-  
   return sheet;
 }
 
@@ -263,11 +277,7 @@ function readPlans_(sheet, teamId) {
     .reverse()
     .filter(r => r[2] === teamId)
     .map(r => {
-      try {
-        return JSON.parse(r[6]);
-      } catch (e) {
-        return null;
-      }
+      try { return JSON.parse(r[6]); } catch (e) { return null; }
     })
     .filter(Boolean)
     .slice(0, 30);
@@ -276,11 +286,7 @@ function readPlans_(sheet, teamId) {
 function cleanPlayer_(player) {
   const name = String(player.name || '').trim().slice(0, 50);
   const jersey = String(player.jersey || '').trim().slice(0, 10);
-  return {
-    name,
-    jersey,
-    label: jersey ? `${name} ${jersey}` : name
-  };
+  return { name, jersey, label: jersey ? `${name} ${jersey}` : name };
 }
 
 function validatePlan_(plan) {
