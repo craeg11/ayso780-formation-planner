@@ -291,6 +291,8 @@
         <input id="teamName" maxlength="80" placeholder="Example: U12 Blue">
         <label for="teamCoach">Coach name (optional)</label>
         <input id="teamCoach" maxlength="80" placeholder="Coach name">
+        <label for="teamPin">4-digit PIN</label>
+        <input id="teamPin" type="password" maxlength="4" pattern="\d{4}" placeholder="1234">
       </div>
       <div class="actions">
         <button id="createButton" onclick="saveTeam()">Create team</button>
@@ -378,10 +380,21 @@
   </main>
 
   <script>
-    // OPTIONAL: Insert your deployed Web App URL to enable cloud background syncing
-    const SYNC_SERVER_URL = ""; 
+    // Paste your deployed Google Apps Script Web App URL here (ends in /exec)
+    const SYNC_SERVER_URL = "https://script.google.com/macros/s/AKfycbzcEXq7MIWpYhdFiRv4E0iLSe2ERsKjzCWQ23nVEO1HQM-Jf3mDbFdCnbHANHNf1oKLoQ/exec"; 
 
-    // Local Storage Database Engine
+    // PIN Cache Helper Methods
+    function getStoredPin(tId) {
+      return sessionStorage.getItem('team_pin_' + tId) || '';
+    }
+    function setStoredPin(tId, pin) {
+      sessionStorage.setItem('team_pin_' + tId, pin);
+    }
+    function clearStoredPin(tId) {
+      sessionStorage.removeItem('team_pin_' + tId);
+    }
+
+    // Local Storage Database Engine with PIN authentication support
     const DB = {
       get: () => JSON.parse(localStorage.getItem('ayso_planner_db') || '{"teams":[],"rosters":{},"plans":{}}'),
       set: (data) => localStorage.setItem('ayso_planner_db', JSON.stringify(data)),
@@ -410,21 +423,24 @@
         if (i >= 0) db.teams[i] = newTeam;
         else db.teams.push(newTeam);
         DB.set(db);
-        DB.queueSync('saveTeam', { team: newTeam });
+        DB.queueSync('saveTeam', { team: { ...newTeam, pin: team.pin } });
         return newTeam;
       },
       deleteTeam: (teamId) => {
         const db = DB.get();
         const team = db.teams.find(t => t.id === teamId);
+        const pin = getStoredPin(teamId);
         db.teams = db.teams.filter(t => t.id !== teamId);
         delete db.rosters[teamId];
         delete db.plans[teamId];
         DB.set(db);
-        DB.queueSync('deleteTeam', { teamId });
+        DB.queueSync('deleteTeam', { teamId, pin });
+        clearStoredPin(teamId);
         return { deleted: team ? team.name : 'Team' };
       },
       saveRoster: (teamId, playerRows) => {
         const db = DB.get();
+        const pin = getStoredPin(teamId);
         const cleaned = playerRows
           .filter(r => r.name.trim())
           .map(r => ({
@@ -434,12 +450,13 @@
           }));
         db.rosters[teamId] = cleaned;
         DB.set(db);
-        DB.queueSync('saveRoster', { teamId, roster: cleaned });
+        DB.queueSync('saveRoster', { teamId, pin, roster: cleaned });
         return cleaned;
       },
       savePlan: (plan) => {
         const db = DB.get();
         const teamId = plan.teamId;
+        const pin = getStoredPin(teamId);
         const id = plan.id || crypto.randomUUID();
         const newPlan = { ...plan, id, savedAt: new Date().toISOString() };
         if (!db.plans[teamId]) db.plans[teamId] = [];
@@ -447,16 +464,17 @@
         if (i >= 0) db.plans[teamId][i] = newPlan;
         else db.plans[teamId].unshift(newPlan);
         DB.set(db);
-        DB.queueSync('savePlan', { plan: newPlan });
+        DB.queueSync('savePlan', { pin, plan: newPlan });
         return newPlan;
       },
       deletePlan: (teamId, planId) => {
         const db = DB.get();
+        const pin = getStoredPin(teamId);
         if (db.plans[teamId]) {
           const plan = db.plans[teamId].find(p => p.id === planId);
           db.plans[teamId] = db.plans[teamId].filter(p => p.id !== planId);
           DB.set(db);
-          DB.queueSync('deletePlan', { planId });
+          DB.queueSync('deletePlan', { teamId, planId, pin });
           return { deleted: plan ? plan.name : 'Plan' };
         }
         return { deleted: 'Plan' };
@@ -520,6 +538,7 @@
     const openTeamButton = $('openTeamButton');
     const teamName = $('teamName');
     const teamCoach = $('teamCoach');
+    const teamPin = $('teamPin');
     const createTeam = $('createTeam');
     const createButton = $('createButton');
     const updateButton = $('updateButton');
@@ -630,6 +649,7 @@
       openTeamButton.disabled = !teamSelect.value;
       teamName.value = '';
       teamCoach.value = '';
+      teamPin.value = '';
       createTeam.classList.remove('hidden');
       createButton.classList.remove('hidden');
       updateButton.classList.add('hidden');
@@ -641,6 +661,18 @@
         msg('Select a team to open.', '', false);
         return;
       }
+
+      let pin = getStoredPin(id);
+      if (!pin) {
+        pin = prompt("Enter 4-digit PIN for this team:");
+        if (!pin) return;
+        if (!/^\d{4}$/.test(pin)) {
+          msg('PIN must be 4 digits.', '', false);
+          return;
+        }
+        setStoredPin(id, pin);
+      }
+
       choose(id);
     }
 
@@ -658,7 +690,22 @@
         msg('Enter a team name.', '', false);
         return;
       }
-      const t = DB.saveTeam({ id: existing?.id || '', name: teamName.value.trim(), coach: teamCoach.value.trim() });
+      
+      const pin = teamPin.value.trim();
+      if (!/^\d{4}$/.test(pin)) {
+        msg('Enter a 4-digit PIN.', '', false);
+        return;
+      }
+
+      const t = DB.saveTeam({ 
+        id: existing?.id || '', 
+        name: teamName.value.trim(), 
+        coach: teamCoach.value.trim(),
+        pin: pin 
+      });
+
+      setStoredPin(t.id, pin);
+
       let i = app.teams.findIndex(x => x.id === t.id);
       if (i < 0) app.teams.push(t);
       else app.teams[i] = t;
@@ -919,10 +966,10 @@
 
     // Run Initializing Function
     init();
-    
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js');
-  }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
   </script>
 </body>
 </html>
