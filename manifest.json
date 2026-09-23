@@ -1,0 +1,16 @@
+{
+  "short_name": "LineupPlanner",
+  "name": "AYSO Lineup Planner",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#edf6ed",
+  "theme_color": "#22663e",
+  "display": "standalone"
+}
