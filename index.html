@@ -495,7 +495,7 @@
 
         const item = queue[0];
         try {
-          const res = await fetch(SYNC_SERVER_URL, {
+          await fetch(SYNC_SERVER_URL, {
             method: 'POST',
 	    mode: 'no-cors', // <-- ADD THIS LINE
             headers: {
@@ -967,11 +967,10 @@
       msg(res.deleted + ' was deleted.', 'success');
     }
 
-    // Run Initializing Function
     init();
-
+	
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js');
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
   </script>
 </body>
