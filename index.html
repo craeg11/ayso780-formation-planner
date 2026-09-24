@@ -466,37 +466,8 @@
         return { deleted: 'Plan' };
       },
 
-      // Sync Engine Queue
-      queueSync: (action, payload) => {
-        if (!SYNC_SERVER_URL) return;
-        const queue = DB.getQueue();
-        queue.push({ action, payload, timestamp: Date.now() });
-        DB.setQueue(queue);
-        DB.processSyncQueue();
-      },
-      processSyncQueue: async () => {
-        if (!navigator.onLine || !SYNC_SERVER_URL) return;
-        const queue = DB.getQueue();
-        if (queue.length === 0) return;
-
-        const item = queue[0];
-        try {
-          await fetch(SYNC_SERVER_URL, {
-            method: 'POST',
-	    mode: 'no-cors', // <-- ADD THIS LINE
-            headers: {
-              'Content-Type': 'text/plain;charset=utf-8' // Avoids preflight CORS OPTIONS check
-            },
-            body: JSON.stringify({ action: item.action, ...item.payload })
-          });
-
-          queue.shift();
-          DB.setQueue(queue);
-          DB.processSyncQueue();
-        } catch (e) {
-          console.warn("Sync temporarily paused:", e);
-        }
-      }
+      queueSync: () => {},
+      processSyncQueue: async () => {}
     };
 
     // Cross-origin read API and confirmed write sync.
@@ -505,7 +476,9 @@
       jsonp(action, params = {}) {
         return new Promise((resolve, reject) => {
           const callback = '__lineupJsonp_' + crypto.randomUUID().replace(/-/g, '');
-          const query = new URLSearchParams({ action, callback, ...params, _: Date.now() });
+          // Apps Script documents JSONP callbacks as "prefix". Send both spellings
+          // so an earlier compatible deployment can still answer this request.
+          const query = new URLSearchParams({ action, prefix: callback, callback, ...params, _: Date.now() });
           const script = document.createElement('script');
           const timeout = setTimeout(() => cleanup(new Error('The planner server did not respond.')), 15000);
           function cleanup(error) {
