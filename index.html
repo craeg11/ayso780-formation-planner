@@ -646,7 +646,7 @@
       '3-4-1 Diamond': ['Goalkeeper', 'Left Center Back', 'Center Back', 'Right Center Back', 'Defensive Mid', 'Left Mid', 'Right Mid', 'Attacking Mid', 'Striker'],
       '4-2-2': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Right Center Back', 'Right Back', 'Left Mid', 'Right Mid', 'Left Striker', 'Right Striker'],
       '4-3-1': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Right Center Back', 'Right Back', 'Left Mid', 'Center Mid', 'Right Mid', 'Striker'],
-      '5-2-1': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Center Back', 'Right Center Back', 'Right Back', 'Left Mid', 'Right Mid', 'Striker'],
+      '5-2-1': ['Goalkeeper', 'Left Wing Back', 'Left Center Back', 'Center Back', 'Right Center Back', 'Right Wing Back', 'Left Mid', 'Right Mid', 'Striker'],
       '2-3-1': ['Goalkeeper', 'Left Back', 'Right Back', 'Left Mid', 'Center Mid', 'Right Mid', 'Striker'],
       '3-2-1': ['Goalkeeper', 'Left Center Back', 'Center Back', 'Right Center Back', 'Left Mid', 'Right Mid', 'Striker'],
       '2-2-2': ['Goalkeeper', 'Left Back', 'Right Back', 'Left Mid', 'Right Mid', 'Left Striker', 'Right Striker'],
@@ -665,13 +665,13 @@
       '4-4-2 Diamond': [[50,91], [14,70], [37,77], [63,77], [86,70], [50,59], [28,46], [72,46], [50,34], [37,18], [63,18]],
       '2-3-3': [[50,91], [18,72], [82,72], [16,49], [50,52], [84,49], [17,20], [50,17], [83,20]],
       '2-4-2': [[50,91], [18,72], [82,72], [16,51], [50,61], [50,39], [84,51], [37,18], [63,18]],
-      '3-2-3': [[50,91], [25,76], [50,78], [75,76], [28,51], [72,51], [17,20], [50,17], [83,20]],
-      '3-3-2': [[50,91], [25,76], [50,78], [75,76], [18,49], [50,52], [82,49], [37,18], [63,18]],
-      '3-4-1': [[50,91], [25,76], [50,78], [75,76], [16,49], [38,53], [62,53], [84,49], [50,17]],
-      '3-4-1 Diamond': [[50,91], [25,76], [50,78], [75,76], [50,58], [27,46], [73,46], [50,34], [50,17]],
+      '3-2-3': [[50,91], [20,76], [50,78], [80,76], [28,51], [72,51], [17,20], [50,17], [83,20]],
+      '3-3-2': [[50,91], [20,76], [50,78], [80,76], [18,49], [50,52], [82,49], [37,18], [63,18]],
+      '3-4-1': [[50,91], [20,76], [50,78], [80,76], [16,43], [34,53], [66,53], [84,43], [50,17]],
+      '3-4-1 Diamond': [[50,91], [20,76], [50,78], [80,76], [50,58], [27,46], [73,46], [50,34], [50,17]],
       '4-2-2': [[50,91], [14,70], [37,77], [63,77], [86,70], [28,50], [72,50], [37,18], [63,18]],
       '4-3-1': [[50,91], [14,70], [37,77], [63,77], [86,70], [18,49], [50,52], [82,49], [50,17]],
-      '5-2-1': [[50,94], [10,66], [24,75], [50,84], [76,75], [90,66], [28,50], [72,50], [50,17]],
+      '5-2-1': [[50,94], [10,63], [22,75], [50,81], [78,75], [90,63], [33,43], [67,43], [50,17]],
       '2-3-1': [[50,91], [18,72], [82,72], [16,49], [50,52], [84,49], [50,17]],
       '3-2-1': [[50,91], [25,76], [50,78], [75,76], [28,51], [72,51], [50,17]],
       '2-2-2': [[50,91], [18,72], [82,72], [28,50], [72,50], [37,18], [63,18]],
@@ -1023,7 +1023,7 @@
           let v = s.lineup[i] || '';
           let u = [...s.lineup.filter((_, j) => j !== i), ...s.substitutes];
           let [x, y] = co[i];
-          if (WIDE_POSITIONS.has(p)) {
+          if (WIDE_POSITIONS.has(p) && plan.formation !== '5-2-1') {
             const edge = plan.formation === '3-5-2' ? 15 : 13;
             x = p.startsWith('Left') ? edge : 100 - edge;
           }
