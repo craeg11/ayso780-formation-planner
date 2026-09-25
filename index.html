@@ -986,6 +986,8 @@
 
     function renderPlanner() {
       plan.teamId = teamId;
+      const selectedFormation = formation.value;
+      if (allowedFormations().includes(selectedFormation)) plan.formation = selectedFormation;
       populateFormationOptions();
       plan.formation = formation.value || plan.formation;
       formation.value = plan.formation;
