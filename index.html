@@ -267,7 +267,7 @@
       <h3 class="create-title">Create a new team</h3>
       <div id="createTeam">
         <label for="teamAgeGroup">Age group</label>
-        <select id="teamAgeGroup"><option value="">— Select age group —</option><option>U19</option><option>U16</option><option>U14</option></select>
+        <select id="teamAgeGroup"><option value="">— Select age group —</option><option>U19</option><option>U16</option><option>U14</option><option>U12</option><option>U10</option></select>
         <label for="teamGender">Gender</label>
         <select id="teamGender"><option value="">— Select gender —</option><option>Boys</option><option>Girls</option></select>
         <label for="teamCoach">Coach name</label>
@@ -637,7 +637,20 @@
       '3-5-2': ['Goalkeeper', 'Left Center Back', 'Center Back', 'Right Center Back', 'Left Wing Back', 'Left Center Mid', 'Center Mid', 'Right Center Mid', 'Right Wing Back', 'Left Striker', 'Right Striker'],
       '4-4-1-1': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Right Center Back', 'Right Back', 'Left Mid', 'Left Center Mid', 'Right Center Mid', 'Right Mid', 'Attacking Mid', 'Striker'],
       '5-3-2': ['Goalkeeper', 'Left Wing Back', 'Left Center Back', 'Center Back', 'Right Center Back', 'Right Wing Back', 'Left Mid', 'Center Mid', 'Right Mid', 'Left Striker', 'Right Striker'],
-      '4-4-2 Diamond': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Right Center Back', 'Right Back', 'Defensive Mid', 'Left Mid', 'Right Mid', 'Attacking Mid', 'Left Striker', 'Right Striker']
+      '4-4-2 Diamond': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Right Center Back', 'Right Back', 'Defensive Mid', 'Left Mid', 'Right Mid', 'Attacking Mid', 'Left Striker', 'Right Striker'],
+      '2-3-3': ['Goalkeeper', 'Left Back', 'Right Back', 'Left Mid', 'Center Mid', 'Right Mid', 'Left Wing', 'Striker', 'Right Wing'],
+      '2-4-2': ['Goalkeeper', 'Left Back', 'Right Back', 'Left Mid', 'Defensive Mid', 'Attacking Mid', 'Right Mid', 'Left Striker', 'Right Striker'],
+      '3-2-3': ['Goalkeeper', 'Left Center Back', 'Center Back', 'Right Center Back', 'Left Mid', 'Right Mid', 'Left Wing', 'Striker', 'Right Wing'],
+      '3-3-2': ['Goalkeeper', 'Left Center Back', 'Center Back', 'Right Center Back', 'Left Mid', 'Center Mid', 'Right Mid', 'Left Striker', 'Right Striker'],
+      '3-4-1': ['Goalkeeper', 'Left Center Back', 'Center Back', 'Right Center Back', 'Left Mid', 'Left Center Mid', 'Right Center Mid', 'Right Mid', 'Striker'],
+      '3-4-1 Diamond': ['Goalkeeper', 'Left Center Back', 'Center Back', 'Right Center Back', 'Defensive Mid', 'Left Mid', 'Right Mid', 'Attacking Mid', 'Striker'],
+      '4-2-2': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Right Center Back', 'Right Back', 'Left Mid', 'Right Mid', 'Left Striker', 'Right Striker'],
+      '4-3-1': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Right Center Back', 'Right Back', 'Left Mid', 'Center Mid', 'Right Mid', 'Striker'],
+      '5-2-1': ['Goalkeeper', 'Left Back', 'Left Center Back', 'Center Back', 'Right Center Back', 'Right Back', 'Left Mid', 'Right Mid', 'Striker'],
+      '2-3-1': ['Goalkeeper', 'Left Back', 'Right Back', 'Left Mid', 'Center Mid', 'Right Mid', 'Striker'],
+      '3-2-1': ['Goalkeeper', 'Left Center Back', 'Center Back', 'Right Center Back', 'Left Mid', 'Right Mid', 'Striker'],
+      '2-2-2': ['Goalkeeper', 'Left Back', 'Right Back', 'Left Mid', 'Right Mid', 'Left Striker', 'Right Striker'],
+      '1-3-2': ['Goalkeeper', 'Center Back', 'Left Mid', 'Center Mid', 'Right Mid', 'Left Striker', 'Right Striker']
     };
 
     const C = {
@@ -649,7 +662,20 @@
       '3-5-2': [[50,91], [25,76], [50,68], [75,76], [12,44], [32,56], [50,36], [68,56], [88,44], [37,19], [63,19]],
       '4-4-1-1': [[50,91], [14,70], [37,77], [63,77], [86,70], [14,46], [35,53], [65,53], [86,46], [50,33], [50,17]],
       '5-3-2': [[50,94], [10,61], [28,74], [50,68], [72,74], [90,61], [25,38], [50,40], [75,38], [37,19], [63,19]],
-      '4-4-2 Diamond': [[50,91], [14,70], [37,77], [63,77], [86,70], [50,59], [28,46], [72,46], [50,34], [37,18], [63,18]]
+      '4-4-2 Diamond': [[50,91], [14,70], [37,77], [63,77], [86,70], [50,59], [28,46], [72,46], [50,34], [37,18], [63,18]],
+      '2-3-3': [[50,91], [18,72], [82,72], [16,49], [50,52], [84,49], [17,20], [50,17], [83,20]],
+      '2-4-2': [[50,91], [18,72], [82,72], [16,51], [43,55], [57,40], [84,51], [37,18], [63,18]],
+      '3-2-3': [[50,91], [25,76], [50,78], [75,76], [28,51], [72,51], [17,20], [50,17], [83,20]],
+      '3-3-2': [[50,91], [25,76], [50,78], [75,76], [18,49], [50,52], [82,49], [37,18], [63,18]],
+      '3-4-1': [[50,91], [25,76], [50,78], [75,76], [16,49], [38,53], [62,53], [84,49], [50,17]],
+      '3-4-1 Diamond': [[50,91], [25,76], [50,78], [75,76], [50,58], [27,46], [73,46], [50,34], [50,17]],
+      '4-2-2': [[50,91], [14,70], [37,77], [63,77], [86,70], [28,50], [72,50], [37,18], [63,18]],
+      '4-3-1': [[50,91], [14,70], [37,77], [63,77], [86,70], [18,49], [50,52], [82,49], [50,17]],
+      '5-2-1': [[50,91], [10,66], [28,75], [50,78], [72,75], [90,66], [28,50], [72,50], [50,17]],
+      '2-3-1': [[50,91], [18,72], [82,72], [16,49], [50,52], [84,49], [50,17]],
+      '3-2-1': [[50,91], [25,76], [50,78], [75,76], [28,51], [72,51], [50,17]],
+      '2-2-2': [[50,91], [18,72], [82,72], [28,50], [72,50], [37,18], [63,18]],
+      '1-3-2': [[50,91], [50,76], [18,50], [50,52], [82,50], [37,18], [63,18]]
     };
 
     const P = {
@@ -661,6 +687,11 @@
     };
 
     const WIDE_POSITIONS = new Set(['Left Back', 'Right Back', 'Left Mid', 'Right Mid', 'Left Wing', 'Right Wing', 'Left Wing Back', 'Right Wing Back']);
+    const FORMATIONS_BY_AGE = {
+      U12: ['2-3-3', '2-4-2', '3-2-3', '3-3-2', '3-4-1', '3-4-1 Diamond', '4-2-2', '4-3-1', '5-2-1'],
+      U10: ['2-3-1', '3-2-1', '2-2-2', '1-3-2']
+    };
+    const ELEVEN_V_ELEVEN = ['4-4-2', '3-4-3', '4-3-3', '4-5-1', '4-2-3-1', '3-5-2', '4-4-1-1', '5-3-2', '4-4-2 Diamond'];
 
     // Application State
     let app = { teams: [], roster: [], plans: [] };
@@ -669,13 +700,32 @@
     let rosterDraft = [];
     let openedPlan = null;
 
+    function selectedTeamAgeGroup() {
+      return (app.teams.find(team => team.id === teamId) || {}).ageGroup || '';
+    }
+
+    function allowedFormations() {
+      return FORMATIONS_BY_AGE[selectedTeamAgeGroup()] || ELEVEN_V_ELEVEN;
+    }
+
+    function defaultFormation() {
+      return allowedFormations()[0];
+    }
+
+    function populateFormationOptions() {
+      const choices = allowedFormations();
+      if (!choices.includes(plan.formation)) plan.formation = choices[0];
+      formation.innerHTML = choices.map(choice => '<option value="' + esc(choice) + '">' + esc(choice) + '</option>').join('');
+      formation.value = plan.formation;
+    }
+
     function blank() {
       return {
         id: '',
         teamId,
         name: '',
         date: '',
-        formation: '4-4-2',
+        formation: defaultFormation(),
         absent: [],
         quarters: {
           Q1: { lineup: [], substitutes: [] },
@@ -700,7 +750,7 @@
 
     async function init() {
       updateOnlineStatus();
-      Object.keys(F).forEach(x => formation.add(new Option(x, x)));
+      populateFormationOptions();
       formation.onchange = renderPlanner;
       loadPlan.onchange = load;
       teamSelect.onchange = () => openTeamButton.disabled = !teamSelect.value;
@@ -936,6 +986,7 @@
 
     function renderPlanner() {
       plan.teamId = teamId;
+      populateFormationOptions();
       plan.formation = formation.value || plan.formation;
       formation.value = plan.formation;
       planName.value = plan.name;
