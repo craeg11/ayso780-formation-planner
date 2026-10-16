@@ -198,6 +198,30 @@
       box-shadow: 0 1px 4px #285b30;
     }
     .subs label { font-size: 18px; margin: 0 0 4px; }
+    .formation-preview {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      height: 150px;
+      margin: 12px auto 0;
+      border: 3px solid #fff;
+      outline: 2px solid #d0e0d2;
+      border-radius: 8px;
+      background: #4d9858;
+      overflow: hidden;
+    }
+    .formation-preview:before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      border-left: 2px solid rgba(255,255,255,.85);
+      left: 50%;
+    }
+    .formation-dot { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px rgba(23,91,45,.5); }
+    #formation { min-height: 64px; font-family: "Arial Narrow", "Roboto Condensed", Arial, sans-serif; font-size: 22px; }
+    .quarter-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 10px 0; }
+    .quarter-page { padding: 0; margin: 0; border: 0; }
+    .quarter-page .pitch { width: 100vw; max-width: 100vw; margin-left: calc(50% - 50vw); border-radius: 0; outline: 0; }
     .or {
       text-align: center;
       font-weight: bold;
@@ -248,6 +272,8 @@
       .unavailable select { font-size: 16px; min-height: 50px; }
       .glossary { font-size: 15px; }
       .glossary-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+      .quarter-nav button { min-height: 52px; font-size: 15px; padding: 8px 4px; }
+      #formation { min-height: 60px; font-size: 20px; }
     }
   </style>
 </head>
@@ -335,6 +361,7 @@
             <select id="loadPlan"></select>
           </label>
         </div>
+        <div id="formationPreview" class="formation-preview" aria-label="Formation preview"></div>
         <div class="actions plan-actions">
           <button class="secondary" onclick="newPlan()">New plan</button>
           <button onclick="savePlan()">Save plan</button>
@@ -348,6 +375,10 @@
         <div id="absences" class="unavailable"></div>
       </section>
 
+      <div class="actions"><button onclick="showQuarter('Q1')">Next: Q1</button></div>
+    </section>
+
+    <section id="quarterStep" class="hidden">
       <div id="quarters"></div>
 
       <section class="card glossary">
@@ -643,12 +674,14 @@
     const rosterHeading = $('rosterHeading');
     const rosterRows = $('rosterRows');
     const plannerStep = $('plannerStep');
+    const quarterStep = $('quarterStep');
     const plannerHeading = $('plannerHeading');
     const planName = $('planName');
     const formation = $('formation');
     const loadPlan = $('loadPlan');
     const absences = $('absences');
     const quarters = $('quarters');
+    const formationPreview = $('formationPreview');
 
     // Formations
     const F = {
@@ -722,6 +755,7 @@
     let plan = blank();
     let rosterDraft = [];
     let openedPlan = null;
+    let currentQuarter = 'Q1';
 
     function selectedTeamAgeGroup() {
       return (app.teams.find(team => team.id === teamId) || {}).ageGroup || '';
@@ -908,6 +942,7 @@
     function startRoster() {
       teamStep.classList.add('hidden');
       plannerStep.classList.add('hidden');
+      quarterStep.classList.add('hidden');
       rosterStep.classList.remove('hidden');
       let t = app.teams.find(x => x.id === teamId);
       rosterHeading.textContent = 'Build the roster for ' + (t ? t.name : 'this team');
@@ -920,6 +955,7 @@
     function backToTeams() {
       teamId = '';
       plan = blank();
+      quarterStep.classList.add('hidden');
       showLanding();
     }
 
@@ -988,6 +1024,7 @@
     function startPlanner() {
       teamStep.classList.add('hidden');
       rosterStep.classList.add('hidden');
+      quarterStep.classList.add('hidden');
       plannerStep.classList.remove('hidden');
       let t = app.teams.find(x => x.id === teamId);
       plannerHeading.textContent = 'Plan the game for ' + (t ? t.name : 'this team');
@@ -1017,7 +1054,29 @@
       planName.value = plan.name;
       renderSaved();
       renderAbsent();
+      renderFormationPreview();
+    }
+
+    function renderFormationPreview() {
+      const positions = C[plan.formation] || [];
+      formationPreview.innerHTML = positions.map(point =>
+        '<span class="formation-dot" style="left:' + point[0] + '%;top:' + point[1] + '%"></span>'
+      ).join('');
+    }
+
+    function showQuarter(quarter) {
+      currentQuarter = quarter;
+      plannerStep.classList.add('hidden');
+      quarterStep.classList.remove('hidden');
       renderFields();
+      window.scrollTo(0, 0);
+    }
+
+    function showPlanSetup() {
+      quarterStep.classList.add('hidden');
+      plannerStep.classList.remove('hidden');
+      renderPlanner();
+      window.scrollTo(0, 0);
     }
 
     function renderSaved() {
@@ -1040,8 +1099,8 @@
       let pos = F[plan.formation];
       let co = C[plan.formation];
 
-      quarters.innerHTML = ['Q1', 'Q2', 'Q3', 'Q4'].map(q => {
-        let s = plan.quarters[q];
+      const q = currentQuarter;
+      const s = plan.quarters[q];
         let players = pos.map((p, i) => {
           let v = s.lineup[i] || '';
           let u = [...s.lineup.filter((_, j) => j !== i), ...s.substitutes];
@@ -1063,13 +1122,23 @@
             '<select onchange="setSub(\'' + q + '\',' + i + ',this.value)">' + options(v, u) + '</select></div>';
         }).join('');
 
-        return '<section class="card quarter"><h2>' + q + '</h2>' +
+        const quarterNumber = Number(q.slice(1));
+        const previous = quarterNumber > 1 ? 'Q' + (quarterNumber - 1) : '';
+        const next = quarterNumber < 4 ? 'Q' + (quarterNumber + 1) : '';
+        quarters.innerHTML = '<section class="quarter quarter-page"><div class="quarter-nav">' +
+          '<button class="secondary" onclick="showPlanSetup()">Plan setup</button>' +
+          (previous ? '<button class="secondary" onclick="showQuarter(\'' + previous + '\')">Back: ' + previous + '</button>' : '<button class="secondary" onclick="backToTeams()">Home</button>') +
+          (next ? '<button onclick="showQuarter(\'' + next + '\')">Next: ' + next + '</button>' : '<button onclick="showPlanSetup()">Finish</button>') +
+          '</div><h2>' + q + '</h2>' +
           '<p class="hint">Choose players directly on their field positions.</p>' +
           '<div class="pitch"><div class="box top"></div><div class="box bottom"></div>' + players + '</div>' +
           '<h3>Substitutes used</h3>' +
           '<p class="hint">These players are unavailable elsewhere in this quarter.</p>' +
-          '<div class="subs">' + subs + '</div></section>';
-      }).join('');
+          '<div class="subs">' + subs + '</div><div class="quarter-nav">' +
+          '<button class="secondary" onclick="showPlanSetup()">Plan setup</button>' +
+          (previous ? '<button class="secondary" onclick="showQuarter(\'' + previous + '\')">Back: ' + previous + '</button>' : '<button class="secondary" onclick="backToTeams()">Home</button>') +
+          (next ? '<button onclick="showQuarter(\'' + next + '\')">Next: ' + next + '</button>' : '<button onclick="showPlanSetup()">Finish</button>') +
+          '</div></section>';
     }
 
     function setAbsent(i, value) {
