@@ -775,6 +775,7 @@
     let openedPlan = null;
     let currentQuarter = 'Q1';
     let planEditing = false;
+    let fieldResizeTimer;
 
     function selectedTeamAgeGroup() {
       return (app.teams.find(team => team.id === teamId) || {}).ageGroup || '';
@@ -828,7 +829,14 @@
       updateOnlineStatus();
       populateFormationOptions();
       formation.onchange = renderPlanner;
+      planName.oninput = () => { plan.name = planName.value; };
       loadPlan.onchange = load;
+      window.addEventListener('resize', () => {
+        clearTimeout(fieldResizeTimer);
+        fieldResizeTimer = setTimeout(() => {
+          if (!quarterStep.classList.contains('hidden')) renderFields();
+        }, 150);
+      });
       teamSelect.onchange = () => openTeamButton.disabled = !teamSelect.value;
       [teamAgeGroup, teamGender, teamCoach, teamSeason, teamYear].forEach(field => field.addEventListener('input', updateTeamNamePreview));
       app = { ...app, ...DB.getAppData() };
@@ -1138,6 +1146,7 @@
             const edge = plan.formation === '3-5-2' ? 15 : 13;
             x = p.startsWith('Left') ? edge : 100 - edge;
           }
+          [x, y] = landscapeCoordinates(plan.formation, p, x, y);
           return '<div class="player" style="left:' + x + '%;top:' + y + '%">' +
             '<label>' + esc(P[p] || p) + '</label>' +
             '<select aria-label="' + esc(q + ' ' + p) + '" onchange="setLineup(\'' + q + '\',' + i + ',this.value)">' + 
@@ -1154,6 +1163,8 @@
         const quarterNumber = Number(q.slice(1));
         const previous = quarterNumber > 1 ? 'Q' + (quarterNumber - 1) : '';
         const next = quarterNumber < 4 ? 'Q' + (quarterNumber + 1) : '';
+        const finalTitle = next ? '' :
+          '<label for="finalPlanName">Plan title <input id="finalPlanName" maxlength="80" placeholder="Example: 4-4-2" value="' + esc(planName.value || plan.name) + '" oninput="syncPlanName(this.value)"></label>';
         const navigation = '<div class="quarter-nav">' +
           '<button class="secondary" onclick="showPlanSetup()">Plan setup</button>' +
           (previous ? '<button class="secondary" onclick="showQuarter(\'' + previous + '\')">Back: ' + previous + '</button>' : '') +
@@ -1165,7 +1176,38 @@
           '<div class="pitch"><div class="box top"></div><div class="box bottom"></div>' + players + '</div>' +
           '<h3>Substitutes used</h3>' +
           '<p class="hint">These players are unavailable elsewhere in this quarter.</p>' +
-          '<div class="subs">' + subs + '</div>' + navigation + '</section>';
+          '<div class="subs">' + subs + '</div>' + finalTitle + navigation + '</section>';
+    }
+
+    function landscapeCoordinates(formationName, position, x, y) {
+      const isLandscape = window.matchMedia && window.matchMedia('(orientation: landscape)').matches;
+      if (!isLandscape) return [x, y];
+
+      // A taller, wider landscape field needs its defensive line lower to leave usable midfield space.
+      if (position === 'Goalkeeper') y = 96;
+      if (position.indexOf('Center Back') >= 0 || position === 'Center Back') y = Math.max(y, 82);
+
+      if (/^4-/.test(formationName) && (position === 'Left Back' || position === 'Right Back')) {
+        x = position === 'Left Back' ? 10 : 90;
+      }
+
+      if (formationName === '4-4-2 Diamond') {
+        if (position === 'Left Mid') x = 38;
+        if (position === 'Right Mid') x = 62;
+        if (position === 'Left Striker' || position === 'Right Striker') y = 12;
+      }
+
+      if (formationName === '3-5-2') {
+        if (position === 'Left Center Back') { x = 20; y = 80; }
+        if (position === 'Right Center Back') { x = 80; y = 80; }
+        if (position === 'Center Back') y = 82;
+        if (position === 'Left Striker' || position === 'Right Striker') y = 12;
+      }
+
+      if (formationName === '4-5-1' || formationName === '4-2-3-1' || formationName === '4-4-1-1') {
+        if (position === 'Striker') y = 12;
+      }
+      return [x, y];
     }
 
     function setAbsent(i, value) {
@@ -1188,6 +1230,11 @@
     function setSub(q, i, v) {
       plan.quarters[q].substitutes[i] = v;
       renderFields();
+    }
+
+    function syncPlanName(value) {
+      plan.name = value;
+      planName.value = value;
     }
 
     function newPlan() {
@@ -1218,7 +1265,9 @@
 
     function savePlan(returnToSetup) {
       plan.teamId = teamId;
-      plan.name = planName.value;
+      const finalPlanName = $('finalPlanName');
+      plan.name = finalPlanName ? finalPlanName.value : planName.value;
+      planName.value = plan.name;
       plan.date = '';
       plan.formation = formation.value;
       
