@@ -380,6 +380,20 @@
       sessionStorage.removeItem('team_pin_' + tId);
     }
 
+    // Older iPads support getRandomValues but not crypto.randomUUID().
+    // Keep generated IDs compatible with both without weakening normal browsers.
+    function uniqueId() {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+      const bytes = new Uint8Array(16);
+      if (window.crypto && typeof window.crypto.getRandomValues === 'function') window.crypto.getRandomValues(bytes);
+      else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+      bytes[6] = (bytes[6] & 15) | 64;
+      bytes[8] = (bytes[8] & 63) | 128;
+      let hex = '';
+      for (let i = 0; i < bytes.length; i++) hex += bytes[i].toString(16).padStart(2, '0');
+      return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-' + hex.slice(16, 20) + '-' + hex.slice(20);
+    }
+
     // Local Storage Database Engine with PIN authentication support
     const DB = {
       get: () => JSON.parse(localStorage.getItem('ayso_planner_db') || '{"teams":[],"rosters":{},"plans":{}}'),
@@ -403,7 +417,7 @@
       // Writes
       saveTeam: (team) => {
         const db = DB.get();
-        const id = team.id || crypto.randomUUID();
+        const id = team.id || uniqueId();
         const newTeam = { id, name: team.name, coach: team.coach || '', ageGroup: team.ageGroup || '', gender: team.gender || '', season: team.season || '', year: team.year || '' };
         const i = db.teams.findIndex(t => t.id === id);
         if (i >= 0) db.teams[i] = newTeam;
@@ -443,7 +457,7 @@
         const db = DB.get();
         const teamId = plan.teamId;
         const pin = getStoredPin(teamId);
-        const id = plan.id || crypto.randomUUID();
+        const id = plan.id || uniqueId();
         const newPlan = { ...plan, id, savedAt: new Date().toISOString() };
         if (!db.plans[teamId]) db.plans[teamId] = [];
         const i = db.plans[teamId].findIndex(p => p.id === id);
@@ -475,7 +489,7 @@
     const Server = {
       jsonp(action, params = {}) {
         return new Promise((resolve, reject) => {
-          const callback = '__lineupJsonp_' + crypto.randomUUID().replace(/-/g, '');
+          const callback = '__lineupJsonp_' + uniqueId().replace(/-/g, '');
           // Apps Script documents JSONP callbacks as "prefix". Send both spellings
           // so an earlier compatible deployment can still answer this request.
           const query = new URLSearchParams({ action, prefix: callback, callback, ...params, _: Date.now() });
@@ -512,7 +526,7 @@
     DB.queueSync = (action, payload) => {
       if (!SYNC_SERVER_URL) return;
       const queue = DB.getQueue();
-      queue.push({ id: crypto.randomUUID(), action, payload, timestamp: Date.now() });
+      queue.push({ id: uniqueId(), action, payload, timestamp: Date.now() });
       DB.setQueue(queue);
       DB.processSyncQueue();
     };
@@ -854,7 +868,7 @@
       }
 
       const t = DB.saveTeam({ 
-        id: existing?.id || '', 
+        id: existing ? existing.id : '', 
         name,
         coach: teamCoach.value.trim(),
         ageGroup: teamAgeGroup.value,
@@ -887,7 +901,7 @@
       plannerStep.classList.add('hidden');
       rosterStep.classList.remove('hidden');
       let t = app.teams.find(x => x.id === teamId);
-      rosterHeading.textContent = 'Build the roster for ' + (t?.name || 'this team');
+      rosterHeading.textContent = 'Build the roster for ' + (t ? t.name : 'this team');
       rosterDraft = app.roster.length 
         ? app.roster.map(p => ({ name: p.name, jersey: p.jersey }))
         : Array.from({ length: 15 }, (_, i) => ({ name: '', jersey: String(i + 2) }));
@@ -967,7 +981,7 @@
       rosterStep.classList.add('hidden');
       plannerStep.classList.remove('hidden');
       let t = app.teams.find(x => x.id === teamId);
-      plannerHeading.textContent = 'Plan the game for ' + (t?.name || 'this team');
+      plannerHeading.textContent = 'Plan the game for ' + (t ? t.name : 'this team');
       plan = plan.teamId === teamId ? plan : blank();
       renderPlanner();
     }
