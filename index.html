@@ -27,6 +27,8 @@
       justify-content: space-between;
       align-items: center;
     }
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .header-home { min-height: 42px; padding: 7px 13px; font-size: 16px; }
     h1 { font-size: 31px; margin: 0 0 7px; }
     h2 { font-size: 27px; margin: 0 0 12px; }
     h3 { font-size: 22px; margin: 0 0 9px; }
@@ -85,6 +87,15 @@
       grid-template-columns: 1fr 1fr;
       gap: 14px;
     }
+    .plan-start {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: 14px;
+    }
+    .plan-start label { margin-top: 0; }
+    .plan-start button { min-width: 142px; }
+    .plan-work { margin-top: 16px; }
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -225,10 +236,12 @@
     .preview-goal.top { top: 3px; }
     .preview-goal.bottom { bottom: 3px; }
     #formation { min-height: 64px; font-family: "Arial Narrow", "Roboto Condensed", Arial, sans-serif; font-size: 22px; }
-    .quarter-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 10px 0; }
+    .quarter-nav { display: flex; gap: 9px; margin: 10px 0; }
+    .quarter-nav button { flex: 1 1 0; }
     .quarter-page { padding: 0; margin: 0; border: 0; }
     .quarter-page .pitch { width: min(100%, 900px); max-width: 900px; margin: 14px auto 22px; border-radius: 0; outline: 0; }
-    .glossary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 16px; }
+    .acronym-key { margin: 0; font-size: 16px; line-height: 1.7; }
+    .acronym-key b { white-space: nowrap; }
     .or {
       text-align: center;
       font-weight: bold;
@@ -277,16 +290,15 @@
       .unavailable { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 10px; }
       .unavailable label { font-size: 15px; }
       .unavailable select { font-size: 16px; min-height: 50px; }
-      .glossary { font-size: 15px; }
-      .glossary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .acronym-key { font-size: 14px; line-height: 1.65; }
       .quarter-nav button { min-height: 52px; font-size: 15px; padding: 8px 4px; }
       #formation { min-height: 60px; font-size: 20px; }
       .quarter-page .pitch { width: 100vw; max-width: 100vw; margin-left: calc(50% - 50vw); }
     }
     @media (orientation: landscape) {
-      .quarter-page .pitch { width: min(94vw, 1200px); max-width: 1200px; height: 0; padding-top: 70%; margin: 14px auto 22px; }
+      .quarter-page .pitch { width: min(94vw, 1100px); max-width: 1100px; height: 0; padding-top: 75%; margin: 14px 0 22px; left: 50%; transform: translateX(-50%); }
       @supports (aspect-ratio: 1 / 1) {
-        .quarter-page .pitch { height: auto; padding-top: 0; aspect-ratio: 1.42; }
+        .quarter-page .pitch { height: auto; padding-top: 0; aspect-ratio: 1.33; }
       }
     }
   </style>
@@ -297,7 +309,10 @@
       <h1>AYSO Lineup Planner</h1>
       <div>Make a team lineup, one quarter at a time.</div>
     </div>
-    <div id="syncBadge" class="sync-status offline">Offline</div>
+    <div class="header-actions">
+      <button class="secondary header-home" onclick="backToTeams()">Home</button>
+      <div id="syncBadge" class="sync-status offline">Offline</div>
+    </div>
   </header>
 
   <main>
@@ -364,57 +379,43 @@
       <section class="card">
         <div class="step-title">Step 3</div>
         <h2 id="plannerHeading">Plan the game</h2>
-        <div class="row">
-          <label for="planName">Plan name
-            <input id="planName" maxlength="80" placeholder="Saturday vs. Tigers">
-          </label>
-          <label for="formation">Formation
-            <select id="formation"></select>
-            <div id="formationPreview" class="formation-preview" aria-label="Formation preview"></div>
-          </label>
+        <div class="plan-start">
           <label for="loadPlan">Saved plans
             <select id="loadPlan"></select>
           </label>
-        </div>
-        <div class="actions plan-actions">
           <button class="secondary" onclick="newPlan()">New plan</button>
-          <button onclick="savePlan()">Save plan</button>
-          <button class="danger" onclick="confirmDeletePlan()">Delete plan</button>
+        </div>
+        <div id="planWork" class="plan-work hidden">
+          <div class="row">
+            <label for="planName">Plan name (example — editable)
+              <input id="planName" maxlength="80" placeholder="Example: 4-4-2">
+            </label>
+            <label for="formation">Formation
+              <select id="formation"></select>
+              <div id="formationPreview" class="formation-preview" aria-label="Formation preview"></div>
+            </label>
+          </div>
+          <div class="actions"><button class="danger" id="deletePlanButton" onclick="confirmDeletePlan()">Delete plan</button></div>
         </div>
       </section>
 
-      <section class="card">
-        <h2>Unavailable players</h2>
-        <p class="hint">Choose up to six players who are unavailable for this plan.</p>
-        <div id="absences" class="unavailable"></div>
-      </section>
+      <div id="planFields" class="hidden">
+        <section class="card">
+          <h2>Unavailable players</h2>
+          <p class="hint">Choose up to six players who are unavailable for this plan.</p>
+          <div id="absences" class="unavailable"></div>
+        </section>
 
-      <div class="actions"><button onclick="showQuarter('Q1')">Next: Q1</button></div>
+        <div class="actions"><button onclick="showQuarter('Q1')">Next: Q1</button></div>
+      </div>
     </section>
 
     <section id="quarterStep" class="hidden">
       <div id="quarters"></div>
 
       <section class="card glossary">
-        <h3>Position glossary</h3>
-        <div class="glossary-grid">
-          <span><b>AM</b> Attacking Mid</span>
-          <span><b>CB</b> Center Back</span>
-          <span><b>CM</b> Center Mid</span>
-          <span><b>DM</b> Defensive Mid</span>
-          <span><b>GK</b> Goalkeeper</span>
-          <span><b>LAM / CAM / RAM</b> Attacking Mid positions</span>
-          <span><b>LB / RB</b> Left / Right Back</span>
-          <span><b>LCB / RCB</b> Left / Right Center Back</span>
-          <span><b>LCM / RCM</b> Left / Right Center Mid</span>
-          <span><b>LDM / RDM</b> Left / Right Defensive Mid</span>
-          <span><b>LM / RM</b> Left / Right Mid</span>
-          <span><b>LS</b> Left Striker</span>
-          <span><b>LW / RW</b> Left / Right Wing</span>
-          <span><b>LWB / RWB</b> Left / Right Wing Back</span>
-          <span><b>RS</b> Right Striker</span>
-          <span><b>ST</b> Striker</span>
-        </div>
+        <h3>Position key</h3>
+        <p class="acronym-key"><b>L</b> = Left &nbsp; <b>R</b> = Right &nbsp; <b>C</b> = Center &nbsp; <b>B</b> = Back &nbsp; <b>M</b> = Midfielder &nbsp; <b>S</b> = Striker &nbsp; <b>W</b> = Wing &nbsp; <b>GK</b> = Goalkeeper &nbsp; <b>D</b> = Defensive &nbsp; <b>A</b> = Attacking</p>
       </section>
     </section>
   </main>
@@ -696,6 +697,9 @@
     const absences = $('absences');
     const quarters = $('quarters');
     const formationPreview = $('formationPreview');
+    const planWork = $('planWork');
+    const planFields = $('planFields');
+    const deletePlanButton = $('deletePlanButton');
 
     // Formations
     const F = {
@@ -770,6 +774,7 @@
     let rosterDraft = [];
     let openedPlan = null;
     let currentQuarter = 'Q1';
+    let planEditing = false;
 
     function selectedTeamAgeGroup() {
       return (app.teams.find(team => team.id === teamId) || {}).ageGroup || '';
@@ -894,6 +899,7 @@
       teamId = id;
       const data = DB.getTeamData(id);
       app = { ...app, ...data };
+      planEditing = false;
       if (app.roster.length) startPlanner();
       else startRoster();
     }
@@ -949,6 +955,7 @@
       app.roster = [];
       app.plans = [];
       plan = blank();
+      planEditing = false;
       startRoster();
       msg('Team saved. Now add the roster.', 'success');
     }
@@ -969,6 +976,7 @@
     function backToTeams() {
       teamId = '';
       plan = blank();
+      planEditing = false;
       quarterStep.classList.add('hidden');
       showLanding();
     }
@@ -1031,6 +1039,7 @@
       app.roster = roster;
       rosterDraft = roster.map(p => ({ name: p.name, jersey: p.jersey }));
       plan = blank();
+      planEditing = false;
       msg('Roster saved.', 'success');
       startPlanner();
     }
@@ -1069,6 +1078,9 @@
       renderSaved();
       renderAbsent();
       renderFormationPreview();
+      planWork.classList.toggle('hidden', !planEditing);
+      planFields.classList.toggle('hidden', !planEditing);
+      deletePlanButton.disabled = !plan.id;
     }
 
     function renderFormationPreview() {
@@ -1142,20 +1154,18 @@
         const quarterNumber = Number(q.slice(1));
         const previous = quarterNumber > 1 ? 'Q' + (quarterNumber - 1) : '';
         const next = quarterNumber < 4 ? 'Q' + (quarterNumber + 1) : '';
-        quarters.innerHTML = '<section class="quarter quarter-page"><div class="quarter-nav">' +
+        const navigation = '<div class="quarter-nav">' +
           '<button class="secondary" onclick="showPlanSetup()">Plan setup</button>' +
-          (previous ? '<button class="secondary" onclick="showQuarter(\'' + previous + '\')">Back: ' + previous + '</button>' : '<button class="secondary" onclick="backToTeams()">Home</button>') +
-          (next ? '<button onclick="showQuarter(\'' + next + '\')">Next: ' + next + '</button>' : '<button onclick="showPlanSetup()">Finish</button>') +
-          '</div><h2>' + q + '</h2>' +
+          (previous ? '<button class="secondary" onclick="showQuarter(\'' + previous + '\')">Back: ' + previous + '</button>' : '') +
+          (next ? '<button onclick="showQuarter(\'' + next + '\')">Next: ' + next + '</button>' : '<button onclick="savePlan(true)">Save plan</button>') +
+          '</div>';
+        quarters.innerHTML = '<section class="quarter quarter-page">' + navigation +
+          '<h2>' + q + '</h2>' +
           '<p class="hint">Choose players directly on their field positions.</p>' +
           '<div class="pitch"><div class="box top"></div><div class="box bottom"></div>' + players + '</div>' +
           '<h3>Substitutes used</h3>' +
           '<p class="hint">These players are unavailable elsewhere in this quarter.</p>' +
-          '<div class="subs">' + subs + '</div><div class="quarter-nav">' +
-          '<button class="secondary" onclick="showPlanSetup()">Plan setup</button>' +
-          (previous ? '<button class="secondary" onclick="showQuarter(\'' + previous + '\')">Back: ' + previous + '</button>' : '<button class="secondary" onclick="backToTeams()">Home</button>') +
-          (next ? '<button onclick="showQuarter(\'' + next + '\')">Next: ' + next + '</button>' : '<button onclick="showPlanSetup()">Finish</button>') +
-          '</div></section>';
+          '<div class="subs">' + subs + '</div>' + navigation + '</section>';
     }
 
     function setAbsent(i, value) {
@@ -1183,12 +1193,16 @@
     function newPlan() {
       plan = blank();
       openedPlan = null;
+      planEditing = true;
       renderPlanner();
     }
 
     function load() {
       if (loadPlan.value === '') {
-        newPlan();
+        plan = blank();
+        openedPlan = null;
+        planEditing = false;
+        renderPlanner();
         return;
       }
       let p = app.plans[Number(loadPlan.value)];
@@ -1197,11 +1211,12 @@
         plan.teamId = teamId;
         Object.values(plan.quarters).forEach(s => s.substitutes = (s.substitutes || []).slice(0, 6));
         openedPlan = { id: plan.id, name: plan.name };
+        planEditing = true;
         renderPlanner();
       }
     }
 
-    function savePlan() {
+    function savePlan(returnToSetup) {
       plan.teamId = teamId;
       plan.name = planName.value;
       plan.date = '';
@@ -1218,6 +1233,7 @@
       const data = DB.getTeamData(teamId);
       app = { ...app, ...data };
       renderPlanner();
+      if (returnToSetup) showPlanSetup();
       msg(copy ? 'New plan created.' : 'Plan saved.', 'success');
     }
 
