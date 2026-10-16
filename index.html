@@ -828,7 +828,10 @@
     async function init() {
       updateOnlineStatus();
       populateFormationOptions();
-      formation.onchange = renderPlanner;
+      formation.onchange = () => {
+        plan.formation = formation.value;
+        renderPlanner();
+      };
       planName.oninput = () => { plan.name = planName.value; };
       loadPlan.onchange = load;
       window.addEventListener('resize', () => {
@@ -1077,10 +1080,7 @@
 
     function renderPlanner() {
       plan.teamId = teamId;
-      const selectedFormation = formation.value;
-      if (allowedFormations().includes(selectedFormation)) plan.formation = selectedFormation;
       populateFormationOptions();
-      plan.formation = formation.value || plan.formation;
       formation.value = plan.formation;
       planName.value = plan.name;
       renderSaved();
@@ -1192,8 +1192,8 @@
       }
 
       if (formationName === '4-4-2 Diamond') {
-        if (position === 'Left Mid') x = 38;
-        if (position === 'Right Mid') x = 62;
+        if (position === 'Left Mid') x = 33;
+        if (position === 'Right Mid') x = 67;
         if (position === 'Left Striker' || position === 'Right Striker') y = 12;
       }
 
