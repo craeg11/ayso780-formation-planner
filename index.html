@@ -115,6 +115,25 @@
     }
     .success { background: #e6f4e9; }
     .hidden { display: none; }
+    .pin-dialog {
+      position: fixed;
+      z-index: 10;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(23, 37, 29, .45);
+    }
+    .pin-dialog.hidden { display: none; }
+    .pin-dialog-card {
+      width: min(100%, 420px);
+      padding: 20px;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 8px 28px rgba(0,0,0,.28);
+    }
+    .pin-dialog-card label { margin-top: 0; }
     .step-title {
       font-size: 18px;
       font-weight: bold;
@@ -317,6 +336,18 @@
 
   <main>
     <div id="notice" class="notice hidden"></div>
+    <div id="pinDialog" class="pin-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="pinDialogTitle">
+      <div class="pin-dialog-card">
+        <h2 id="pinDialogTitle">Enter team PIN</h2>
+        <p class="hint">Enter the 4-digit PIN for this saved team.</p>
+        <label for="savedTeamPin">4-digit PIN</label>
+        <input id="savedTeamPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" placeholder="1234">
+        <div class="actions">
+          <button class="secondary" onclick="cancelSavedTeamPin()">Cancel</button>
+          <button onclick="submitSavedTeamPin()">Open team</button>
+        </div>
+      </div>
+    </div>
 
     <!-- STEP 1: Select or Create Team -->
     <section id="teamStep" class="card">
@@ -681,6 +712,8 @@
     const teamSeason = $('teamSeason');
     const teamYear = $('teamYear');
     const teamPin = $('teamPin');
+    const pinDialog = $('pinDialog');
+    const savedTeamPin = $('savedTeamPin');
     const teamNamePreview = $('teamNamePreview');
     const createTeam = $('createTeam');
     const createButton = $('createButton');
@@ -776,6 +809,7 @@
     let currentQuarter = 'Q1';
     let planEditing = false;
     let fieldResizeTimer;
+    let pendingTeamId = '';
 
     function selectedTeamAgeGroup() {
       return (app.teams.find(team => team.id === teamId) || {}).ageGroup || '';
@@ -888,15 +922,41 @@
 
       let pin = getStoredPin(id);
       if (!pin) {
-        pin = prompt("Enter 4-digit PIN for this team:");
-        if (!pin) return;
-        if (!/^\d{4}$/.test(pin)) {
-          msg('PIN must be 4 digits.', '', false);
-          return;
-        }
-        setStoredPin(id, pin);
+        showSavedTeamPin(id);
+        return;
       }
 
+      await openTeamWithPin(id, pin);
+    }
+
+    function showSavedTeamPin(id) {
+      pendingTeamId = id;
+      savedTeamPin.value = '';
+      pinDialog.classList.remove('hidden');
+      setTimeout(() => savedTeamPin.focus(), 0);
+    }
+
+    function cancelSavedTeamPin() {
+      pendingTeamId = '';
+      pinDialog.classList.add('hidden');
+    }
+
+    async function submitSavedTeamPin() {
+      const pin = savedTeamPin.value.trim();
+      if (!/^\d{4}$/.test(pin)) {
+        msg('PIN must be 4 digits.', '', false);
+        savedTeamPin.focus();
+        return;
+      }
+      const id = pendingTeamId;
+      if (!id) return;
+      pinDialog.classList.add('hidden');
+      pendingTeamId = '';
+      setStoredPin(id, pin);
+      await openTeamWithPin(id, pin);
+    }
+
+    async function openTeamWithPin(id, pin) {
       try {
         if (navigator.onLine) await DB.pullTeam(id, pin);
         choose(id);
